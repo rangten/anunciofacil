@@ -1,71 +1,102 @@
-<!-- SEÇÃO: Ranking de Anúncios -->
-<section id="ranking" class="py-20 px-4 bg-white">
-  <div class="container mx-auto max-w-6xl">
-    <h2 class="text-3xl font-bold mb-6 text-center">Ranking dos 50 Melhores Anúncios</h2>
 
-    <div class="mb-6 flex flex-col md:flex-row items-center gap-4">
-      <input id="busca-ranking" type="text" placeholder="Ex: Processador de alimento manual" class="w-full md:w-2/3 p-3 border rounded shadow-sm">
-      <button onclick="buscarRanking()" class="blue-button">Buscar</button>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anúncio Fácil IA</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-blue-600">AnúncioFácil</h1>
+    <nav>
+      <a href="#ranking" class="mr-4 text-blue-500">Ranking</a>
+      <a href="#" class="text-blue-500">Entrar</a>
+    </nav>
+  </header>
+
+  <main class="text-center py-16 px-4">
+    <h2 class="text-4xl font-bold text-blue-700 mb-4">Crie anúncios profissionais para marketplaces com IA</h2>
+    <p class="mb-8">Gere descrições otimizadas para o Mercado Livre e Shopee em segundos com nossa inteligência artificial especializada.</p>
+    <div class="space-x-4">
+      <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded">Ver Planos</a>
+      <a href="#" class="bg-gray-300 hover:bg-gray-400 text-black px-6 py-3 rounded">Como Funciona</a>
     </div>
+  </main>
 
-    <div id="resultado-ranking" class="overflow-x-auto mt-6"></div>
-  </div>
-</section>
+  <!-- Seção de Ranking -->
+  <section id="ranking" class="py-20 px-4 bg-white">
+    <div class="container mx-auto text-center">
+      <h2 class="text-3xl font-bold mb-8">Ranking dos 50 Melhores Anúncios</h2>
+      <input id="termoBusca" class="border px-4 py-2 rounded mb-4 w-full max-w-md" placeholder="Ex: panela de pressão">
+      <br>
+      <button onclick="buscarRanking()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded mb-4">Buscar</button>
+      <div id="resultadoRanking" class="text-left max-w-4xl mx-auto text-sm"></div>
 
-<script>
-async function buscarRanking() {
-  const query = document.getElementById('busca-ranking').value;
-  const container = document.getElementById('resultado-ranking');
-  container.innerHTML = '<p class="text-center text-gray-500">Carregando anúncios...</p>';
+      <hr class="my-8">
 
-  const searchUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
-  const searchRes = await fetch(searchUrl);
-  const searchData = await searchRes.json();
-
-  const items = await Promise.all(searchData.results.map(async (item, index) => {
-    let sellerName = '...';
-    try {
-      const sellerRes = await fetch(`https://api.mercadolibre.com/users/${item.seller.id}`);
-      const sellerData = await sellerRes.json();
-      sellerName = sellerData.nickname;
-    } catch {}
-
-    return `
-      <tr class="border-b">
-        <td class="px-4 py-2 text-center">${index + 1}</td>
-        <td class="px-4 py-2"><img src="${item.thumbnail}" alt="Produto" class="w-16 h-16 object-contain"></td>
-        <td class="px-4 py-2">${item.title}</td>
-        <td class="px-4 py-2">${sellerName}</td>
-        <td class="px-4 py-2">${item.sold_quantity}</td>
-        <td class="px-4 py-2">${item.listing_type_id === 'gold_pro' ? 'Premium' : 'Clássico'}</td>
-        <td class="px-4 py-2">${item.shipping?.logistic_type === 'fulfillment' ? 'Sim' : 'Não'}</td>
-        <td class="px-4 py-2">${item.catalog_listing ? 'Sim' : 'Não'}</td>
-        <td class="px-4 py-2">R$ ${item.price.toFixed(2)}</td>
-        <td class="px-4 py-2"><a href="${item.permalink}" target="_blank" class="text-indigo-600 underline">Ver</a></td>
-      </tr>
-    `;
-  }));
-
-  container.innerHTML = `
-    <div class="overflow-x-auto">
-      <table class="min-w-full border text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-2 text-left">#</th>
-            <th class="px-4 py-2 text-left">Foto</th>
-            <th class="px-4 py-2 text-left">Título</th>
-            <th class="px-4 py-2 text-left">Vendedor</th>
-            <th class="px-4 py-2 text-left">Vendas</th>
-            <th class="px-4 py-2 text-left">Tipo</th>
-            <th class="px-4 py-2 text-left">Full</th>
-            <th class="px-4 py-2 text-left">Catálogo</th>
-            <th class="px-4 py-2 text-left">Preço</th>
-            <th class="px-4 py-2 text-left">Link</th>
-          </tr>
-        </thead>
-        <tbody>${items.join('')}</tbody>
-      </table>
+      <h2 class="text-2xl font-bold mb-4">Ver posição do seu anúncio</h2>
+      <input id="linkAnuncio" class="border px-4 py-2 rounded mb-2 w-full max-w-md" placeholder="Cole aqui o link do seu anúncio">
+      <br>
+      <button onclick="buscarPosicao()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Ver posição</button>
+      <div id="resultadoPosicao" class="mt-4"></div>
     </div>
-  `;
-}
-</script>
+  </section>
+
+  <script>
+    function buscarRanking() {
+      const termo = document.getElementById('termoBusca').value.trim();
+      if (!termo) return alert('Digite um termo válido.');
+
+      document.getElementById('resultadoRanking').innerHTML = 'Carregando anúncios...';
+
+      fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=50`)
+        .then(r => r.json())
+        .then(dados => {
+          if (!dados.results.length) {
+            document.getElementById('resultadoRanking').innerHTML = 'Nenhum resultado encontrado.';
+            return;
+          }
+
+          const html = dados.results.map((item, i) => \`
+            <div class="border p-2 mb-2 rounded">
+              <strong>${i + 1}º - ${item.title}</strong><br>
+              Preço: R$ ${(item.price).toFixed(2)}<br>
+              Vendedor: ${item.seller.nickname}<br>
+              Tipo: ${item.catalog_listing ? 'Catálogo' : 'Comum'}<br>
+              Entrega Full: ${item.shipping.logistic_type === 'fulfillment' ? 'Sim' : 'Não'}<br>
+              <img src="${item.thumbnail}" width="100"><br>
+              <a href="${item.permalink}" target="_blank">Ver anúncio</a>
+            </div>
+          \`).join('');
+
+          document.getElementById('resultadoRanking').innerHTML = html;
+        });
+    }
+
+    function buscarPosicao() {
+      const link = document.getElementById('linkAnuncio').value.trim();
+      if (!link.includes('MLB')) return alert('Cole um link válido do Mercado Livre');
+
+      const id = link.match(/MLB\d{10,}/)?.[0];
+      if (!id) return alert('ID não encontrado no link');
+
+      const termo = prompt('Digite o nome do produto que aparece na busca:');
+      if (!termo) return;
+
+      document.getElementById('resultadoPosicao').innerText = 'Buscando posição...';
+
+      fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=50`)
+        .then(r => r.json())
+        .then(dados => {
+          const index = dados.results.findIndex(p => p.id === id);
+          document.getElementById('resultadoPosicao').innerText =
+            index >= 0 ? \`Seu anúncio está na posição: \${index + 1}\` : 'Seu anúncio não está entre os 50 primeiros.';
+        });
+    }
+  </script>
+
+</body>
+</html>
