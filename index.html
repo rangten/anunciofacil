@@ -4,113 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ranking dos 50 Melhores Anúncios</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-      text-align: center;
-    }
-    h1 {
-      color: #333;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      margin: 5px;
-      border-radius: 5px;
-    }
-    button {
-      cursor: pointer;
-      background-color: #0066ff;
-      color: white;
-      border: none;
-    }
-    button:hover {
-      background-color: #0052cc;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #0066ff;
-      color: white;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>Ranking dos 50 Melhores Anúncios</h1>
-  <input id="busca" placeholder="Ex: panela de pressão" />
+  <input type="text" id="termo" placeholder="Ex: panela de pressão" />
   <button onclick="buscarRanking()">Buscar</button>
+  <p id="carregando">Carregando anúncios...</p>
+  <table id="tabela"></table>
 
   <h2>Ver posição do seu anúncio</h2>
-  <input id="link" placeholder="Cole o link ou ID do anúncio" style="width: 300px;" />
-  <button onclick="verPosicao()" style="background-color: #28a745">Ver posição</button>
+  <input type="text" id="link" placeholder="https://produto.mercadolivre.com.br/MLB-1234567890" />
+  <button onclick="verPosicao()">Ver posição</button>
+  <p id="resultado"></p>
 
-  <div id="resultado" style="margin-top: 30px;"></div>
-
-  <script>
-    async function buscarRanking() {
-      const termo = document.getElementById('busca').value;
-      const div = document.getElementById('resultado');
-      div.innerHTML = '<p>Carregando anúncios...</p>';
-      const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=50`;
-      const res = await fetch(url);
-      const dados = await res.json();
-
-      if (!dados.results.length) {
-        div.innerHTML = '<p>Nenhum resultado encontrado.</p>';
-        return;
-      }
-
-      let html = '<table><tr><th>#</th><th>Título</th><th>Preço</th><th>Vendedor</th><th>Link</th></tr>';
-      dados.results.forEach((item, i) => {
-        html += `<tr>
-          <td>${i + 1}</td>
-          <td>${item.title}</td>
-          <td>R$ ${item.price.toFixed(2)}</td>
-          <td>${item.seller.nickname}</td>
-          <td><a href="${item.permalink}" target="_blank">Ver</a></td>
-        </tr>`;
-      });
-      html += '</table>';
-      div.innerHTML = html;
-    }
-
-    async function verPosicao() {
-      const link = document.getElementById('link').value;
-      const div = document.getElementById('resultado');
-      const idProduto = link.includes("MLB") ? link.match(/MLB\d{9,}/)?.[0] : link;
-
-      if (!idProduto) {
-        alert('ID ou link inválido');
-        return;
-      }
-
-      const termo = document.getElementById('busca').value;
-      if (!termo) {
-        alert('Digite o nome do produto para pesquisar a posição');
-        return;
-      }
-
-      const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=50`;
-      const res = await fetch(url);
-      const dados = await res.json();
-
-      const posicao = dados.results.findIndex(item => item.id === idProduto);
-      if (posicao >= 0) {
-        alert(`Seu anúncio está na posição ${posicao + 1}`);
-      } else {
-        alert('Seu anúncio não está entre os 50 primeiros.');
-      }
-    }
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>

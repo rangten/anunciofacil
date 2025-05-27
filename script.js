@@ -1,77 +1,56 @@
-
 async function buscarRanking() {
-  const termo = document.getElementById("termoBusca").value.trim();
-  const resultadoDiv = document.getElementById("resultadoRanking");
-  resultadoDiv.innerHTML = "Carregando anúncios...";
+  const termo = document.getElementById("termo").value.trim();
+  const tabela = document.getElementById("tabela");
+  const carregando = document.getElementById("carregando");
+  carregando.textContent = "Carregando anúncios...";
+
+  tabela.innerHTML = "";
 
   try {
-    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=50`;
-    const res = await fetch(url);
-    const data = await res.json();
+    const response = await fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=50`);
+    const data = await response.json();
 
-    if (!data.results || data.results.length === 0) {
-      resultadoDiv.innerHTML = "Nenhum anúncio encontrado.";
+    if (!data.results.length) {
+      carregando.textContent = "Nenhum anúncio encontrado.";
       return;
     }
 
-    const html = data.results.map((item, index) => {
-      return `
-        <div style="border:1px solid #ddd; padding:10px; margin:10px 0; border-radius:5px;">
-          <strong>#${index + 1} - ${item.title}</strong><br>
-          <img src="${item.thumbnail}" style="width:120px;"><br>
-          Preço: R$${item.price.toFixed(2)}<br>
-          Vendedor: ${item.seller.nickname}<br>
-          Tipo de anúncio: ${item.listing_type_id}<br>
-          Entrega: ${item.shipping.logistic_type === "fulfillment" ? "FULL" : "Normal"}<br>
-          Catálogo: ${item.catalog_listing ? "Sim" : "Não"}<br>
-          <a href="${item.permalink}" target="_blank">Ver anúncio</a>
-        </div>
-      `;
-    }).join("");
+    let html = "<tr><th>Posição</th><th>Título</th><th>Preço</th><th>Link</th></tr>";
+    data.results.forEach((item, index) => {
+      html += `<tr><td>${index + 1}</td><td>${item.title}</td><td>R$ ${item.price}</td><td><a href="${item.permalink}" target="_blank">Ver</a></td></tr>`;
+    });
 
-    resultadoDiv.innerHTML = html;
+    tabela.innerHTML = html;
+    carregando.textContent = "";
   } catch (error) {
-    resultadoDiv.innerHTML = "Erro ao buscar anúncios.";
-    console.error(error);
+    carregando.textContent = "Erro ao buscar anúncios.";
   }
 }
 
-async function buscarPosicao() {
-  const link = document.getElementById("linkAnuncio").value.trim();
-  const resultadoDiv = document.getElementById("resultadoPosicao");
-  resultadoDiv.innerHTML = "Verificando posição...";
+async function verPosicao() {
+  const link = document.getElementById("link").value.trim();
+  const resultado = document.getElementById("resultado");
+  resultado.textContent = "";
 
-  if (!link) {
-    resultadoDiv.innerHTML = "Cole o link do anúncio.";
+  const idMatch = link.match(/MLB-(\d+)/);
+  if (!idMatch) {
+    resultado.textContent = "Link inválido.";
     return;
   }
-
-  const idMatch = link.match(/MLB\d+/);
-  const idProduto = idMatch ? idMatch[0] : null;
-
-  if (!idProduto) {
-    resultadoDiv.innerHTML = "ID do anúncio não encontrado no link.";
-    return;
-  }
-
-  const termo = document.getElementById("termoBusca").value.trim();
-
-  if (!termo) {
-    resultadoDiv.innerHTML = "Digite o nome do produto para busca.";
-    return;
-  }
+  const id = idMatch[1];
+  const termo = document.getElementById("termo").value.trim();
 
   try {
-    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=200`;
-    const res = await fetch(url);
-    const data = await res.json();
+    const response = await fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=50`);
+    const data = await response.json();
 
-    const posicao = data.results.findIndex(item => item.id === idProduto);
-    resultadoDiv.innerHTML = posicao >= 0
-      ? `Seu anúncio está na posição: ${posicao + 1}`
-      : "Seu anúncio não está entre os 200 primeiros.";
+    const index = data.results.findIndex(item => item.id === "MLB" + id);
+    if (index !== -1) {
+      resultado.textContent = `Seu anúncio está na posição ${index + 1}.`;
+    } else {
+      resultado.textContent = "Seu anúncio não está entre os 50 primeiros resultados.";
+    }
   } catch (error) {
-    resultadoDiv.innerHTML = "Erro ao verificar posição.";
-    console.error(error);
+    resultado.textContent = "Erro ao verificar posição.";
   }
 }
