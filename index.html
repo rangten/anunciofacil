@@ -1,18 +1,532 @@
 
+
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anúncio Fácil IA</title>
-    <link rel="stylesheet" href="style.css">
+    <title>RankML - Ranking de Anúncios Mercado Livre</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ml-yellow': '#FFE600',
+                        'ml-blue': '#2D3277',
+                        'ml-light-blue': '#3483FA',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f7;
+        }
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(52, 131, 250, 0.3);
+        }
+        .result-card {
+            transition: all 0.2s ease;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .tab {
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            border-color: #3483FA;
+            color: #3483FA;
+        }
+        .loader {
+            border-top-color: #3483FA;
+            animation: spinner 1s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
-    <h1>Anúncio Fácil IA</h1>
-    <p>Ferramenta para buscar ranking de anúncios e posição no Mercado Livre</p>
-    <input type="text" id="produto" placeholder="Digite o nome do produto">
-    <button onclick="buscarRanking()">Buscar Ranking</button>
-    <div id="resultado"></div>
-    <script src="script.js"></script>
-</body>
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-ml-light-blue" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                </svg>
+                <h1 class="ml-2 text-xl font-bold text-gray-800">RankML</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+                <a href="#" class="text-gray-700 hover:text-ml-light-blue font-medium">Início</a>
+                <a href="#" class="text-gray-700 hover:text-ml-light-blue font-medium">Como Funciona</a>
+                <a href="#" class="text-gray-700 hover:text-ml-light-blue font-medium">Planos</a>
+                <a href="#" class="text-gray-700 hover:text-ml-light-blue font-medium">Contato</a>
+            </nav>
+            <div>
+                <button class="bg-ml-light-blue text-white px-4 py-2 rounded-md font-medium hover:bg-ml-blue transition-colors">
+                    Entrar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-5xl mx-auto">
+            <!-- Search Section -->
+            <section class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Análise de Ranking no Mercado Livre</h2>
+                
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button id="tab-top50" class="tab active px-4 py-2 border-b-2 border-ml-light-blue text-ml-light-blue font-medium">
+                        Top 50 Anúncios
+                    </button>
+                    <button id="tab-position" class="tab px-4 py-2 border-b-2 border-transparent text-gray-500 font-medium">
+                        Posição do Seu Anúncio
+                    </button>
+                </div>
+                
+                <!-- Top 50 Search Form -->
+                <div id="search-top50" class="search-form">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-grow">
+                            <label for="product-search" class="block text-sm font-medium text-gray-700 mb-1">Buscar produto</label>
+                            <input 
+                                type="text" 
+                                id="product-search" 
+                                class="search-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-light-blue" 
+                                placeholder="Ex: Processador de alimentos manual"
+                            >
+                        </div>
+                        <div class="md:self-end">
+                            <button 
+                                id="search-button" 
+                                class="w-full md:w-auto px-6 py-3 bg-ml-yellow text-ml-blue font-bold rounded-lg hover:bg-yellow-400 transition-colors"
+                                onclick="searchProducts()"
+                            >
+                                Buscar Ranking
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Position Search Form (Hidden by default) -->
+                <div id="search-position" class="search-form hidden">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-grow">
+                            <label for="category-search" class="block text-sm font-medium text-gray-700 mb-1">Categoria ou termo de busca</label>
+                            <input 
+                                type="text" 
+                                id="category-search" 
+                                class="search-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-light-blue" 
+                                placeholder="Ex: Utensílios de cozinha"
+                            >
+                        </div>
+                        <div class="flex-grow">
+                            <label for="product-url" class="block text-sm font-medium text-gray-700 mb-1">URL ou título exato do seu anúncio</label>
+                            <input 
+                                type="text" 
+                                id="product-url" 
+                                class="search-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-light-blue" 
+                                placeholder="Ex: Jogo de Panelas Inox Tramontina 5 Peças"
+                            >
+                        </div>
+                        <div class="md:self-end">
+                            <button 
+                                id="position-button" 
+                                class="w-full md:w-auto px-6 py-3 bg-ml-yellow text-ml-blue font-bold rounded-lg hover:bg-yellow-400 transition-colors"
+                                onclick="findPosition()"
+                            >
+                                Encontrar Posição
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Results Section -->
+            <section id="results-section" class="hidden">
+                <!-- Loading Indicator -->
+                <div id="loading" class="hidden flex justify-center my-12">
+                    <div class="loader w-12 h-12 border-4 border-gray-200 rounded-full"></div>
+                </div>
+                
+                <!-- Results Header -->
+                <div id="results-header" class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Resultados da Busca</h2>
+                    <div class="flex items-center mt-2 md:mt-0">
+                        <span class="text-gray-600 mr-2">Exportar:</span>
+                        <button class="bg-green-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-green-700 transition-colors mr-2">
+                            Excel
+                        </button>
+                        <button class="bg-gray-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors">
+                            PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Results Table -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Posição
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Produto
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Preço
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Vendas
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Tipo
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Entrega
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Catálogo
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Data
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Results will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Position Result Section -->
+            <section id="position-result" class="hidden bg-white rounded-xl shadow-md p-6 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Posição do Seu Anúncio</h3>
+                <div id="position-details" class="flex flex-col items-center">
+                    <!-- Position details will be inserted here -->
+                </div>
+            </section>
+            
+            <!-- Features Section -->
+            <section class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Por que usar o RankML?</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-ml-light-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Análise Competitiva</h3>
+                        <p class="text-gray-600">Descubra o que os melhores anúncios estão fazendo para se destacar e aplique essas estratégias aos seus próprios anúncios.</p>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Monitore seu Ranking</h3>
+                        <p class="text-gray-600">Acompanhe a posição dos seus anúncios ao longo do tempo e veja como suas otimizações estão impactando os resultados.</p>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Insights Valiosos</h3>
+                        <p class="text-gray-600">Obtenha dados detalhados sobre os anúncios mais bem-sucedidos, incluindo tipo de anúncio, método de entrega e muito mais.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">RankML</h3>
+                    <p class="text-gray-400">Ferramenta de análise de ranking para vendedores do Mercado Livre.</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Links Rápidos</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Início</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Como Funciona</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Planos</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Contato</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Termos de Uso</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Política de Privacidade</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Contato</h3>
+                    <p class="text-gray-400">contato@rankml.com.br</p>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 RankML. Todos os direitos reservados.</p>
+                <p class="mt-2 text-sm">Este serviço não é afiliado ao Mercado Livre. Mercado Livre é uma marca registrada de Mercado Libre, Inc.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching functionality
+        document.getElementById('tab-top50').addEventListener('click', function() {
+            switchTab('top50');
+        });
+        
+        document.getElementById('tab-position').addEventListener('click', function() {
+            switchTab('position');
+        });
+        
+        function switchTab(tabId) {
+            // Update tab styling
+            document.getElementById('tab-top50').classList.remove('active');
+            document.getElementById('tab-position').classList.remove('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+            
+            // Show/hide appropriate search form
+            document.getElementById('search-top50').classList.add('hidden');
+            document.getElementById('search-position').classList.add('hidden');
+            document.getElementById('search-' + tabId).classList.remove('hidden');
+            
+            // Hide results sections when switching tabs
+            document.getElementById('results-section').classList.add('hidden');
+            document.getElementById('position-result').classList.add('hidden');
+        }
+        
+        // Search functionality (demo)
+        function searchProducts() {
+            const searchTerm = document.getElementById('product-search').value.trim();
+            
+            if (!searchTerm) {
+                alert('Por favor, digite um termo de busca.');
+                return;
+            }
+            
+            // Show loading indicator
+            document.getElementById('results-section').classList.remove('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results-header').classList.add('hidden');
+            document.getElementById('position-result').classList.add('hidden');
+            
+            // Simulate API call delay
+            setTimeout(function() {
+                // Hide loading indicator
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('results-header').classList.remove('hidden');
+                
+                // Generate and display mock results
+                generateMockResults(searchTerm);
+            }, 1500);
+        }
+        
+        function findPosition() {
+            const categoryTerm = document.getElementById('category-search').value.trim();
+            const productTerm = document.getElementById('product-url').value.trim();
+            
+            if (!categoryTerm || !productTerm) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+            
+            // Show loading indicator
+            document.getElementById('position-result').classList.remove('hidden');
+            document.getElementById('position-details').innerHTML = `
+                <div class="flex justify-center my-6">
+                    <div class="loader w-12 h-12 border-4 border-gray-200 rounded-full"></div>
+                </div>
+            `;
+            document.getElementById('results-section').classList.add('hidden');
+            
+            // Simulate API call delay
+            setTimeout(function() {
+                // Generate random position between 1 and 200
+                const position = Math.floor(Math.random() * 200) + 1;
+                
+                // Display position result
+                let resultClass, resultIcon, resultMessage;
+                
+                if (position <= 50) {
+                    resultClass = 'text-green-600';
+                    resultIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>`;
+                    resultMessage = 'Seu anúncio está bem posicionado!';
+                } else if (position <= 100) {
+                    resultClass = 'text-yellow-600';
+                    resultIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>`;
+                    resultMessage = 'Seu anúncio pode melhorar de posição.';
+                } else {
+                    resultClass = 'text-red-600';
+                    resultIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-red-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>`;
+                    resultMessage = 'Seu anúncio precisa de otimização urgente!';
+                }
+                
+                document.getElementById('position-details').innerHTML = `
+                    ${resultIcon}
+                    <p class="text-xl font-bold ${resultClass} mb-2">Posição #${position}</p>
+                    <p class="text-gray-600 mb-4">${resultMessage}</p>
+                    <div class="bg-gray-100 p-4 rounded-lg w-full max-w-md">
+                        <h4 class="font-semibold mb-2">Detalhes do Anúncio</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="text-sm text-gray-600">Termo de busca:</div>
+                            <div class="text-sm font-medium">${categoryTerm}</div>
+                            
+                            <div class="text-sm text-gray-600">Título do anúncio:</div>
+                            <div class="text-sm font-medium">${productTerm}</div>
+                            
+                            <div class="text-sm text-gray-600">Total de resultados:</div>
+                            <div class="text-sm font-medium">${Math.floor(Math.random() * 10000) + 1000}</div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <button class="bg-ml-light-blue text-white px-4 py-2 rounded-md font-medium hover:bg-ml-blue transition-colors">
+                            Ver Recomendações de Otimização
+                        </button>
+                    </div>
+                `;
+            }, 2000);
+        }
+        
+        function generateMockResults(searchTerm) {
+            const resultsBody = document.getElementById('results-body');
+            resultsBody.innerHTML = '';
+            
+            // Generate 50 mock results
+            for (let i = 1; i <= 50; i++) {
+                const price = (Math.random() * 500 + 50).toFixed(2);
+                const sales = Math.floor(Math.random() * 1000);
+                
+                // Randomize listing type
+                const listingTypes = ['Clássico', 'Premium'];
+                const listingType = listingTypes[Math.floor(Math.random() * listingTypes.length)];
+                const listingClass = listingType === 'Premium' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
+                
+                // Randomize shipping type
+                const shippingTypes = ['Full', 'Mercado Envios', 'Normal'];
+                const shippingType = shippingTypes[Math.floor(Math.random() * shippingTypes.length)];
+                const shippingClass = shippingType === 'Full' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+                
+                // Randomize catalog status
+                const isCatalog = Math.random() > 0.5;
+                
+                // Generate random date within last 2 years
+                const today = new Date();
+                const twoYearsAgo = new Date();
+                twoYearsAgo.setFullYear(today.getFullYear() - 2);
+                const randomDate = new Date(twoYearsAgo.getTime() + Math.random() * (today.getTime() - twoYearsAgo.getTime()));
+                const formattedDate = randomDate.toLocaleDateString('pt-BR');
+                
+                // Create table row
+                const row = document.createElement('tr');
+                row.className = 'result-card hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">#${i}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center mr-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${searchTerm} ${i}</div>
+                                <div class="text-sm text-gray-500 truncate max-w-xs">Vendedor: Loja ${Math.floor(Math.random() * 1000) + 1}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">R$ ${price}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${sales}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${listingClass}">
+                            ${listingType}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${shippingClass}">
+                            ${shippingType}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${isCatalog ? 'Sim' : 'Não'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${formattedDate}</div>
+                    </td>
+                `;
+                
+                resultsBody.appendChild(row);
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9468b81f7244a417',t:'MTc0ODM4MjUzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
