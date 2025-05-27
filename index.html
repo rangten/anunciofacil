@@ -1,23 +1,18 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ranking dos 50 Melhores Anúncios</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anúncio Fácil IA</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Ranking dos 50 Melhores Anúncios</h1>
-  <input type="text" id="termo" placeholder="Ex: panela de pressão" />
-  <button onclick="buscarRanking()">Buscar</button>
-  <p id="carregando">Carregando anúncios...</p>
-  <table id="tabela"></table>
-
-  <h2>Ver posição do seu anúncio</h2>
-  <input type="text" id="link" placeholder="https://produto.mercadolivre.com.br/MLB-1234567890" />
-  <button onclick="verPosicao()">Ver posição</button>
-  <p id="resultado"></p>
-
-  <script src="script.js"></script>
+    <h1>Anúncio Fácil IA</h1>
+    <p>Ferramenta para buscar ranking de anúncios e posição no Mercado Livre</p>
+    <input type="text" id="produto" placeholder="Digite o nome do produto">
+    <button onclick="buscarRanking()">Buscar Ranking</button>
+    <div id="resultado"></div>
+    <script src="script.js"></script>
 </body>
 </html>
