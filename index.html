@@ -1,17 +1,71 @@
+<!-- SEÇÃO: Ranking de Anúncios -->
+<section id="ranking" class="py-20 px-4 bg-white">
+  <div class="container mx-auto max-w-6xl">
+    <h2 class="text-3xl font-bold mb-6 text-center">Ranking dos 50 Melhores Anúncios</h2>
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>AnúncioFácil IA</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <meta name="description" content="Descubra o Agente de IA AnúncioFácil: crie automaticamente descrições e imagens para seus anúncios no Mercado Livre. Basta copiar e colar! Economize tempo, tenha anúncios profissionais e aumente suas vendas em poucos minutos. Experimente grátis por 7 dias!">
-  <meta name="keywords" content="anúncio automático Mercado Livre, agente IA para vendas, geração de anúncios Mercado Livre, criar anúncios com inteligência artificial, imagens IA para vendas, automação e-commerce, anúncios Mercado Livre fácil, aumentar vendas ML">
-  <meta name="author" content="AnúncioFácil IA">
-</head>
-<body style="font-family:sans-serif; text-align:center; padding:50px;">
-  <h1>AnúncioFácil IA</h1>
-  <p>Crie anúncios otimizados com descrições e imagens geradas por inteligência artificial.</p>
-  <a href="https://bit.ly/3H9M1Wu" target="_blank" rel="noopener noreferrer" style="background:#3483FA; color:white; padding:14px 24px; text-decoration:none; border-radius:6px; font-size:16px;">Assinar e Acessar Agora</a>
-</body>
-</html>
+    <div class="mb-6 flex flex-col md:flex-row items-center gap-4">
+      <input id="busca-ranking" type="text" placeholder="Ex: Processador de alimento manual" class="w-full md:w-2/3 p-3 border rounded shadow-sm">
+      <button onclick="buscarRanking()" class="blue-button">Buscar</button>
+    </div>
+
+    <div id="resultado-ranking" class="overflow-x-auto mt-6"></div>
+  </div>
+</section>
+
+<script>
+async function buscarRanking() {
+  const query = document.getElementById('busca-ranking').value;
+  const container = document.getElementById('resultado-ranking');
+  container.innerHTML = '<p class="text-center text-gray-500">Carregando anúncios...</p>';
+
+  const searchUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
+  const searchRes = await fetch(searchUrl);
+  const searchData = await searchRes.json();
+
+  const items = await Promise.all(searchData.results.map(async (item, index) => {
+    let sellerName = '...';
+    try {
+      const sellerRes = await fetch(`https://api.mercadolibre.com/users/${item.seller.id}`);
+      const sellerData = await sellerRes.json();
+      sellerName = sellerData.nickname;
+    } catch {}
+
+    return `
+      <tr class="border-b">
+        <td class="px-4 py-2 text-center">${index + 1}</td>
+        <td class="px-4 py-2"><img src="${item.thumbnail}" alt="Produto" class="w-16 h-16 object-contain"></td>
+        <td class="px-4 py-2">${item.title}</td>
+        <td class="px-4 py-2">${sellerName}</td>
+        <td class="px-4 py-2">${item.sold_quantity}</td>
+        <td class="px-4 py-2">${item.listing_type_id === 'gold_pro' ? 'Premium' : 'Clássico'}</td>
+        <td class="px-4 py-2">${item.shipping?.logistic_type === 'fulfillment' ? 'Sim' : 'Não'}</td>
+        <td class="px-4 py-2">${item.catalog_listing ? 'Sim' : 'Não'}</td>
+        <td class="px-4 py-2">R$ ${item.price.toFixed(2)}</td>
+        <td class="px-4 py-2"><a href="${item.permalink}" target="_blank" class="text-indigo-600 underline">Ver</a></td>
+      </tr>
+    `;
+  }));
+
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full border text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">#</th>
+            <th class="px-4 py-2 text-left">Foto</th>
+            <th class="px-4 py-2 text-left">Título</th>
+            <th class="px-4 py-2 text-left">Vendedor</th>
+            <th class="px-4 py-2 text-left">Vendas</th>
+            <th class="px-4 py-2 text-left">Tipo</th>
+            <th class="px-4 py-2 text-left">Full</th>
+            <th class="px-4 py-2 text-left">Catálogo</th>
+            <th class="px-4 py-2 text-left">Preço</th>
+            <th class="px-4 py-2 text-left">Link</th>
+          </tr>
+        </thead>
+        <tbody>${items.join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+</script>
